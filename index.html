@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>todo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #fafaf8;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 3rem 1rem;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 {
+      font-size: 1rem;
+      font-weight: normal;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 2rem;
+    }
+
+    #auth-section,
+    #todo-section {
+      display: none;
+    }
+
+    #auth-section.active,
+    #todo-section.active {
+      display: block;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #999;
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid #ddd;
+      background: transparent;
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 0.4rem 0;
+      outline: none;
+      color: #1a1a1a;
+    }
+
+    input:focus {
+      border-bottom-color: #1a1a1a;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: #1a1a1a;
+      color: #fafaf8;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      margin-top: 1.2rem;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    button.ghost {
+      background: transparent;
+      color: #999;
+      border: 1px solid #ddd;
+    }
+
+    button.ghost:hover {
+      color: #1a1a1a;
+      border-color: #999;
+    }
+
+    #msg {
+      font-size: 0.8rem;
+      color: #999;
+      margin-top: 0.8rem;
+      min-height: 1.2em;
+    }
+
+    #add-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      margin-bottom: 1.5rem;
+    }
+
+    #add-row input {
+      flex: 1;
+    }
+
+    #add-row button {
+      margin-top: 0;
+      padding: 0.4rem 0.8rem;
+      font-size: 1.2rem;
+      letter-spacing: 0;
+    }
+
+    #todos {
+      list-style: none;
+    }
+
+    #todos li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #f0f0ee;
+      font-size: 0.95rem;
+    }
+
+    #todos li:first-child {
+      border-top: 1px solid #f0f0ee;
+    }
+
+    #todos li input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #1a1a1a;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    #todos li span {
+      flex: 1;
+      transition: opacity 0.15s;
+    }
+
+    #todos li.done span {
+      text-decoration: line-through;
+      opacity: 0.35;
+    }
+
+    #todos li .del {
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    #todos li .del:hover {
+      color: #999;
+      background: none;
+    }
+
+    #topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    #topbar button {
+      margin: 0;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.7rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #111;
+        color: #e8e8e4;
+      }
+
+      input[type="email"],
+      input[type="password"],
+      input[type="text"] {
+        color: #e8e8e4;
+        border-bottom-color: #333;
+      }
+
+      input:focus {
+        border-bottom-color: #e8e8e4;
+      }
+
+      button {
+        background: #e8e8e4;
+        color: #111;
+      }
+
+      button:hover {
+        background: #ccc;
+      }
+
+      button.ghost {
+        background: transparent;
+        color: #555;
+        border-color: #333;
+      }
+
+      button.ghost:hover {
+        color: #e8e8e4;
+        border-color: #555;
+      }
+
+      #todos li {
+        border-bottom-color: #1e1e1e;
+      }
+
+      #todos li:first-child {
+        border-top-color: #1e1e1e;
+      }
+
+      #todos li .del {
+        color: #333;
+      }
+
+      #todos li .del:hover {
+        color: #666;
+        background: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <h1>todo</h1>
+
+    <div id="auth-section">
+      <label>email</label>
+      <input type="email" id="email-input" placeholder="you@example.com" autocomplete="username" />
+      <label>password</label>
+      <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password" />
+      <button id="login-btn">sign in</button>
+      <p id="msg"></p>
+    </div>
+
+    <div id="todo-section">
+      <div id="topbar">
+        <span id="user-email" style="font-size:0.75rem;color:#999"></span>
+        <button class="ghost" id="logout-btn">sign out</button>
+      </div>
+      <div id="add-row">
+        <input type="text" id="new-todo" placeholder="new task…" />
+        <button id="add-btn">+</button>
+      </div>
+      <ul id="todos"></ul>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://iuxexaqephrslyyjbmoz.supabase.co"
+    const SUPABASE_KEY = "sb_publishable_yGemzn6s4QO8mzM3iPrnJA_5umw2HyD"
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+    const authSection = document.getElementById("auth-section")
+    const todoSection = document.getElementById("todo-section")
+    const emailInput = document.getElementById("email-input")
+    const passwordInput = document.getElementById("password-input")
+    const loginBtn = document.getElementById("login-btn")
+    const msg = document.getElementById("msg")
+    const newTodo = document.getElementById("new-todo")
+    const addBtn = document.getElementById("add-btn")
+    const todoList = document.getElementById("todos")
+    const logoutBtn = document.getElementById("logout-btn")
+    const userEmail = document.getElementById("user-email")
+
+    async function init() {
+      sb.auth.onAuthStateChange((_e, session) => {
+        if (session) showTodos(session.user)
+        else showAuth()
+      })
+      const { data: { session } } = await sb.auth.getSession()
+      if (session) showTodos(session.user)
+      else showAuth()
+    }
+
+    function showAuth() {
+      authSection.classList.add("active")
+      todoSection.classList.remove("active")
+    }
+
+    async function showTodos(user) {
+      authSection.classList.remove("active")
+      todoSection.classList.add("active")
+      userEmail.textContent = user.email
+      loadTodos()
+    }
+
+    async function signIn() {
+      const email = emailInput.value.trim()
+      const password = passwordInput.value
+      if (!email || !password) return
+      loginBtn.disabled = true
+      msg.textContent = "…"
+      const { error } = await sb.auth.signInWithPassword({ email, password })
+      msg.textContent = error ? error.message : ""
+      loginBtn.disabled = false
+    }
+
+    loginBtn.onclick = signIn
+    passwordInput.onkeydown = e => { if (e.key === "Enter") signIn() }
+
+    logoutBtn.onclick = () => sb.auth.signOut()
+
+    async function loadTodos() {
+      const { data } = await sb.from("todos").select("*").order("created_at")
+      todoList.innerHTML = ""
+      if (data) data.forEach(renderTodo)
+    }
+
+    function renderTodo(todo) {
+      const li = document.createElement("li")
+      if (todo.done) li.classList.add("done")
+
+      const cb = document.createElement("input")
+      cb.type = "checkbox"
+      cb.checked = todo.done
+      cb.onchange = async () => {
+        await sb.from("todos").update({ done: cb.checked }).eq("id", todo.id)
+        li.classList.toggle("done", cb.checked)
+      }
+
+      const span = document.createElement("span")
+      span.textContent = todo.text
+
+      const del = document.createElement("button")
+      del.className = "del"
+      del.textContent = "×"
+      del.onclick = async () => {
+        await sb.from("todos").delete().eq("id", todo.id)
+        li.remove()
+      }
+
+      li.append(cb, span, del)
+      todoList.appendChild(li)
+    }
+
+    addBtn.onclick = addTodo
+    newTodo.onkeydown = e => { if (e.key === "Enter") addTodo() }
+
+    async function addTodo() {
+      const text = newTodo.value.trim()
+      if (!text) return
+      newTodo.value = ""
+      const { data, error } = await sb.from("todos")
+        .insert({ text })
+        .select().single()
+      if (!error) renderTodo(data)
+    }
+
+    init()
+  </script>
+</body>
+
+</html>
