@@ -4,11 +4,11 @@ const CACHE_VERSION = "v1"
 const CACHE_NAME = `todo-pwa-${CACHE_VERSION}`
 
 const APP_SHELL_URLS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icons/icon.svg",
-  "/icons/maskable.svg",
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icons/icon.svg",
+  "./icons/maskable.svg",
 ]
 
 self.addEventListener("install", (event) => {
@@ -45,31 +45,28 @@ self.addEventListener("fetch", (event) => {
   const { request } = event
   if (request.method !== "GET") return
 
-  // App-shell offline support for navigations.
   if (isNavigationRequest(request)) {
     event.respondWith(
       (async () => {
         try {
           const networkResponse = await fetch(request)
           const cache = await caches.open(CACHE_NAME)
-          cache.put("/index.html", networkResponse.clone())
+          cache.put(request, networkResponse.clone())
           return networkResponse
         } catch {
-          const cached = await caches.match("/index.html")
-          return cached || new Response("Offline", { status: 503 })
+          const indexUrl = new URL("./index.html", self.location)
+          return (await caches.match(indexUrl)) || new Response("Offline", { status: 503 })
         }
       })()
     )
     return
   }
 
-  // Cache-first for same-origin static assets we own.
+  // Cache-first for same-origin static assets within our scope.
   const url = new URL(request.url)
-  const isSameOrigin = url.origin === self.location.origin
-  if (isSameOrigin && (url.pathname.startsWith("/icons/") || APP_SHELL_URLS.includes(url.pathname))) {
+  if (url.origin === self.location.origin) {
     event.respondWith(
       (async () => (await caches.match(request)) || fetch(request))()
     )
   }
 })
-
