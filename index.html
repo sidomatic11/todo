@@ -390,7 +390,57 @@
     // PWA: cache the app shell for offline loading.
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").catch(() => {
+        // #region agent log (pwa-debug)
+        const __dbgLog = (hypothesisId, message, data) =>
+          fetch('http://127.0.0.1:7454/ingest/0fa378c2-2af1-4f1a-a817-d443f79ae32c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'2e2e36'},body:JSON.stringify({sessionId:'2e2e36',runId:'pre-fix',hypothesisId,location:'index.html:pwa-bootstrap',message,data,timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+
+        // #region agent log (pwa-debug)
+        __dbgLog("H1", "page location + origin", {
+          href: location.href,
+          origin: location.origin,
+          pathname: location.pathname,
+        })
+        // #endregion
+
+        // #region agent log (pwa-debug)
+        __dbgLog("H2", "installability signals", {
+          hasSW: "serviceWorker" in navigator,
+          controller: !!navigator.serviceWorker.controller,
+          secureContext: window.isSecureContext,
+        })
+        // #endregion
+
+        // #region agent log (pwa-debug)
+        ;(async () => {
+          // Try both absolute and relative, to detect GH Pages subpath issues.
+          const candidates = [
+            { kind: "manifest", url: "/manifest.json" },
+            { kind: "manifest", url: "./manifest.json" },
+            { kind: "sw", url: "/sw.js" },
+            { kind: "sw", url: "./sw.js" },
+          ]
+          const results = []
+          for (const c of candidates) {
+            try {
+              const res = await fetch(c.url, { cache: "no-store" })
+              results.push({ ...c, status: res.status, ok: res.ok, contentType: res.headers.get("content-type") })
+            } catch (e) {
+              results.push({ ...c, error: String(e) })
+            }
+          }
+          __dbgLog("H1", "pwa asset fetch probe", { results })
+        })()
+        // #endregion
+
+        navigator.serviceWorker.register("/sw.js").then((reg) => {
+          // #region agent log (pwa-debug)
+          __dbgLog("H1", "sw registered", { scope: reg.scope })
+          // #endregion
+        }).catch((e) => {
+          // #region agent log (pwa-debug)
+          __dbgLog("H1", "sw registration failed", { error: String(e) })
+          // #endregion
           // If registration fails (e.g. file://), the app still works normally.
         })
       })
