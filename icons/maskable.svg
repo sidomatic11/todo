@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .bg { fill: #fafaf8; }
+      .fg { fill: #1a1a1a; font: 700 220px "Courier New", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace; }
+      @media (prefers-color-scheme: dark) {
+        .bg { fill: #111111; }
+        .fg { fill: #e8e8e4; }
+      }
+    </style>
+  </defs>
+  <!-- Maskable icons should use the full canvas (no rounded corners). -->
+  <rect class="bg" x="0" y="0" width="512" height="512"/>
+  <text class="fg" x="50%" y="56%" text-anchor="middle" dominant-baseline="middle">t</text>
+</svg>
