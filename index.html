@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>todo</title>
+  <title>today</title>
   <meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
   <link rel="manifest" href="manifest.json">
@@ -12,9 +12,7 @@
   <link rel="apple-touch-icon" href="icons/icon.svg">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -114,11 +112,29 @@
       min-height: 1.2em;
     }
 
+    #topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    #topbar span {
+      font-size: 0.75rem;
+      color: #999;
+    }
+
+    #topbar button {
+      margin: 0;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.7rem;
+    }
+
     #add-row {
       display: flex;
       gap: 0.5rem;
       align-items: flex-end;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     #add-row input {
@@ -132,24 +148,60 @@
       letter-spacing: 0;
     }
 
-    #todos {
-      list-style: none;
+    .section {
+      margin-bottom: 2.5rem;
     }
 
-    #todos li {
+    .section-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #bbb;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    #today-slots {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .task-list {
+      list-style: none;
+      min-height: 2px;
+    }
+
+    .task-list.drop-target {
+      outline: 1px dashed #ccc;
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+
+    .task-list li {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
       padding: 0.6rem 0;
       border-bottom: 1px solid #f0f0ee;
       font-size: 0.95rem;
+      transition: opacity 0.35s ease;
     }
 
-    #todos li:first-child {
+    .task-list li:first-child {
       border-top: 1px solid #f0f0ee;
     }
 
-    #todos li input[type="checkbox"] {
+    .task-list li.dragging {
+      opacity: 0.3;
+    }
+
+    .task-list li.fading {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .task-list li input[type="checkbox"] {
       width: 14px;
       height: 14px;
       accent-color: #1a1a1a;
@@ -157,45 +209,46 @@
       flex-shrink: 0;
     }
 
-    #todos li span {
-      flex: 1;
-      transition: opacity 0.15s;
+    .task-list li input[type="checkbox"]:disabled {
+      cursor: default;
     }
 
-    #todos li.done span {
+    .task-text {
+      flex: 1;
+    }
+
+    .task-list li.done .task-text {
       text-decoration: line-through;
       opacity: 0.35;
     }
 
-    #todos li .del {
+    .icon-btn {
       background: none;
       border: none;
       color: #ccc;
       font-size: 1rem;
       cursor: pointer;
-      padding: 0;
+      padding: 0 2px;
       margin: 0;
       line-height: 1;
       text-transform: none;
       letter-spacing: 0;
+      flex-shrink: 0;
+      transition: color 0.15s;
     }
 
-    #todos li .del:hover {
-      color: #999;
+    .icon-btn:hover {
+      color: #888;
       background: none;
     }
 
-    #topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
+    .icon-btn:disabled {
+      opacity: 0.2;
+      cursor: default;
     }
 
-    #topbar button {
-      margin: 0;
-      padding: 0.3rem 0.7rem;
-      font-size: 0.7rem;
+    .icon-btn:disabled:hover {
+      color: #ccc;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -235,21 +288,24 @@
         border-color: #555;
       }
 
-      #todos li {
+      .task-list li {
         border-bottom-color: #1e1e1e;
       }
 
-      #todos li:first-child {
+      .task-list li:first-child {
         border-top-color: #1e1e1e;
       }
 
-      #todos li .del {
-        color: #333;
+      .icon-btn {
+        color: #444;
       }
 
-      #todos li .del:hover {
-        color: #666;
-        background: none;
+      .icon-btn:hover {
+        color: #888;
+      }
+
+      .task-list.drop-target {
+        outline-color: #444;
       }
     }
   </style>
@@ -257,12 +313,12 @@
 
 <body>
   <div id="app">
-    <h1>todo</h1>
+    <h1>today</h1>
 
     <div id="auth-section">
-      <label>email</label>
+      <label for="email-input">email</label>
       <input type="email" id="email-input" placeholder="you@example.com" autocomplete="username" />
-      <label>password</label>
+      <label for="password-input">password</label>
       <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password" />
       <button id="login-btn">sign in</button>
       <p id="msg"></p>
@@ -270,42 +326,60 @@
 
     <div id="todo-section">
       <div id="topbar">
-        <span id="user-email" style="font-size:0.75rem;color:#999"></span>
+        <span id="user-email"></span>
         <button class="ghost" id="logout-btn">sign out</button>
       </div>
       <div id="add-row">
         <input type="text" id="new-todo" placeholder="new task…" />
         <button id="add-btn">+</button>
       </div>
-      <ul id="todos"></ul>
+
+      <div class="section">
+        <div class="section-label">
+          <span>today</span>
+          <span id="today-slots">0 / 3</span>
+        </div>
+        <ul id="today-list" class="task-list" data-section="today"></ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">
+          <span>not today</span>
+        </div>
+        <ul id="not-today-list" class="task-list" data-section="not_today"></ul>
+      </div>
     </div>
   </div>
 
   <script>
     const SUPABASE_URL = "https://iuxexaqephrslyyjbmoz.supabase.co"
     const SUPABASE_KEY = "sb_publishable_yGemzn6s4QO8mzM3iPrnJA_5umw2HyD"
-
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+    let todayCount = 0
+    let currentUserId = null
 
     const authSection = document.getElementById("auth-section")
     const todoSection = document.getElementById("todo-section")
     const emailInput = document.getElementById("email-input")
     const passwordInput = document.getElementById("password-input")
     const loginBtn = document.getElementById("login-btn")
-    const msg = document.getElementById("msg")
-    const newTodo = document.getElementById("new-todo")
+    const msgEl = document.getElementById("msg")
+    const newTodoInput = document.getElementById("new-todo")
     const addBtn = document.getElementById("add-btn")
-    const todoList = document.getElementById("todos")
     const logoutBtn = document.getElementById("logout-btn")
-    const userEmail = document.getElementById("user-email")
+    const userEmailEl = document.getElementById("user-email")
+    const todayList = document.getElementById("today-list")
+    const notTodayList = document.getElementById("not-today-list")
+    const todaySlotsEl = document.getElementById("today-slots")
 
     async function init() {
       sb.auth.onAuthStateChange((_e, session) => {
-        if (session) showTodos(session.user)
+        if (session) showApp(session.user)
         else showAuth()
       })
       const { data: { session } } = await sb.auth.getSession()
-      if (session) showTodos(session.user)
+      if (session) showApp(session.user)
       else showAuth()
     }
 
@@ -314,11 +388,13 @@
       todoSection.classList.remove("active")
     }
 
-    async function showTodos(user) {
+    async function showApp(user) {
+      currentUserId = user.id
       authSection.classList.remove("active")
       todoSection.classList.add("active")
-      userEmail.textContent = user.email
-      loadTodos()
+      userEmailEl.textContent = user.email
+      await checkDailyReset()
+      await loadTodos()
     }
 
     async function signIn() {
@@ -326,62 +402,181 @@
       const password = passwordInput.value
       if (!email || !password) return
       loginBtn.disabled = true
-      msg.textContent = "…"
+      msgEl.textContent = "…"
       const { error } = await sb.auth.signInWithPassword({ email, password })
-      msg.textContent = error ? error.message : ""
+      msgEl.textContent = error ? error.message : ""
       loginBtn.disabled = false
     }
 
     loginBtn.onclick = signIn
     passwordInput.onkeydown = e => { if (e.key === "Enter") signIn() }
-
     logoutBtn.onclick = () => sb.auth.signOut()
 
-    async function loadTodos() {
-      const { data } = await sb.from("todos").select("*").order("created_at")
-      todoList.innerHTML = ""
-      if (data) data.forEach(renderTodo)
+    async function checkDailyReset() {
+      const today = new Date().toDateString()
+      const key = `today_reset_${currentUserId}`
+      if (localStorage.getItem(key) === today) return
+      await Promise.all([
+        sb.from("todos").update({ section: "not_today" }).eq("section", "today").eq("done", false),
+        sb.from("todos").delete().eq("section", "today").eq("done", true)
+      ])
+      localStorage.setItem(key, today)
     }
 
-    function renderTodo(todo) {
+    async function loadTodos() {
+      const { data } = await sb.from("todos").select("*")
+      todayList.innerHTML = ""
+      notTodayList.innerHTML = ""
+      todayCount = 0
+      if (!data) return
+
+      const todayItems = data
+        .filter(t => t.section === "today")
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+
+      const notTodayItems = data
+        .filter(t => t.section !== "today")
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      todayItems.forEach(t => todayList.appendChild(makeItem(t)))
+      notTodayItems.forEach(t => notTodayList.appendChild(makeItem(t)))
+      todayCount = todayItems.length
+      updateSlots()
+    }
+
+    function updateSlots() {
+      todaySlotsEl.textContent = `${todayCount} / 3`
+      notTodayList.querySelectorAll(".move-btn").forEach(btn => {
+        btn.disabled = todayCount >= 3
+      })
+    }
+
+    function makeItem(todo) {
       const li = document.createElement("li")
+      li.dataset.id = String(todo.id)
+      li.dataset.section = todo.section || "not_today"
+      li.draggable = true
       if (todo.done) li.classList.add("done")
 
       const cb = document.createElement("input")
       cb.type = "checkbox"
       cb.checked = todo.done
-      cb.onchange = async () => {
-        await sb.from("todos").update({ done: cb.checked }).eq("id", todo.id)
-        li.classList.toggle("done", cb.checked)
+
+      const text = document.createElement("span")
+      text.className = "task-text"
+      text.textContent = todo.text
+
+      const moveBtn = document.createElement("button")
+      moveBtn.className = "icon-btn move-btn"
+      const isToday = todo.section === "today"
+      moveBtn.textContent = isToday ? "↓" : "↑"
+      moveBtn.title = isToday ? "move to not today" : "move to today"
+      if (!isToday) moveBtn.disabled = todayCount >= 3
+
+      const delBtn = document.createElement("button")
+      delBtn.className = "icon-btn"
+      delBtn.textContent = "×"
+
+      cb.onchange = () => completeItem(todo.id, li, cb)
+      moveBtn.onclick = () => {
+        const to = li.dataset.section === "today" ? "not_today" : "today"
+        moveItem(todo.id, li, to)
       }
+      delBtn.onclick = () => deleteItem(todo.id, li)
 
-      const span = document.createElement("span")
-      span.textContent = todo.text
+      li.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/id", String(todo.id))
+        e.dataTransfer.setData("text/from", li.dataset.section)
+        setTimeout(() => li.classList.add("dragging"), 0)
+      })
+      li.addEventListener("dragend", () => li.classList.remove("dragging"))
 
-      const del = document.createElement("button")
-      del.className = "del"
-      del.textContent = "×"
-      del.onclick = async () => {
-        await sb.from("todos").delete().eq("id", todo.id)
-        li.remove()
-      }
-
-      li.append(cb, span, del)
-      todoList.appendChild(li)
+      li.append(cb, text, moveBtn, delBtn)
+      return li
     }
 
-    addBtn.onclick = addTodo
-    newTodo.onkeydown = e => { if (e.key === "Enter") addTodo() }
+    async function completeItem(id, li, cb) {
+      cb.disabled = true
+      li.classList.add("done")
+      await sb.from("todos").update({ done: true }).eq("id", id)
+      setTimeout(async () => {
+        li.classList.add("fading")
+        await delay(380)
+        await sb.from("todos").delete().eq("id", id)
+        if (li.dataset.section === "today") { todayCount--; updateSlots() }
+        li.remove()
+      }, 750)
+    }
+
+    async function moveItem(id, li, toSection) {
+      if (toSection === "today" && todayCount >= 3) return
+      await sb.from("todos").update({ section: toSection }).eq("id", id)
+
+      li.dataset.section = toSection
+      const moveBtn = li.querySelector(".move-btn")
+      moveBtn.textContent = toSection === "today" ? "↓" : "↑"
+      moveBtn.title = toSection === "today" ? "move to not today" : "move to today"
+      moveBtn.disabled = false
+
+      if (toSection === "today") {
+        todayList.appendChild(li)
+        todayCount++
+      } else {
+        notTodayList.prepend(li)
+        todayCount--
+      }
+      updateSlots()
+    }
+
+    async function deleteItem(id, li) {
+      await sb.from("todos").delete().eq("id", id)
+      if (li.dataset.section === "today") { todayCount--; updateSlots() }
+      li.remove()
+    }
 
     async function addTodo() {
-      const text = newTodo.value.trim()
+      const text = newTodoInput.value.trim()
       if (!text) return
-      newTodo.value = ""
-      const { data, error } = await sb.from("todos")
-        .insert({ text })
-        .select().single()
-      if (!error) renderTodo(data)
+      newTodoInput.value = ""
+      const section = todayCount < 3 ? "today" : "not_today"
+      const { data, error } = await sb.from("todos").insert({ text, section }).select().single()
+      if (error || !data) return
+      const li = makeItem(data)
+      if (section === "today") {
+        todayList.appendChild(li)
+        todayCount++
+        updateSlots()
+      } else {
+        notTodayList.prepend(li)
+      }
     }
+
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+    ;[todayList, notTodayList].forEach(list => {
+      list.addEventListener("dragover", e => {
+        e.preventDefault()
+        if (list.dataset.section === "today" && todayCount >= 3) return
+        list.classList.add("drop-target")
+      })
+      list.addEventListener("dragleave", e => {
+        if (!list.contains(e.relatedTarget)) list.classList.remove("drop-target")
+      })
+      list.addEventListener("drop", e => {
+        e.preventDefault()
+        list.classList.remove("drop-target")
+        const id = e.dataTransfer.getData("text/id")
+        const fromSection = e.dataTransfer.getData("text/from")
+        const toSection = list.dataset.section
+        if (fromSection === toSection) return
+        if (toSection === "today" && todayCount >= 3) return
+        const li = document.querySelector(`[data-id="${id}"]`)
+        if (li) moveItem(id, li, toSection)
+      })
+    })
+
+    addBtn.onclick = addTodo
+    newTodoInput.onkeydown = e => { if (e.key === "Enter") addTodo() }
 
     init()
   </script>
